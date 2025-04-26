@@ -14,6 +14,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.widget.ViewPager2
 import com.example.agendaapp.R
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.firestore.FieldValue
 import java.text.SimpleDateFormat
 import java.util.*
@@ -31,7 +33,7 @@ class CalendarFragment : Fragment() {
 
         val calendarView = view.findViewById<CalendarView>(R.id.calendarView)
         val eventSlider = view.findViewById<ViewPager2>(R.id.eventSlider)
-        val addEventButton = view.findViewById<Button>(R.id.addEventButton)
+        val addEventFab = view.findViewById<FloatingActionButton>(R.id.addEventFab)
 
         val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         selectedDate = dateFormatter.format(Date())
@@ -41,39 +43,23 @@ class CalendarFragment : Fragment() {
             loadEventsFromFirebase(eventSlider) // 🔥 Carica gli eventi da Firebase
         }
 
-
-        addEventButton.setOnClickListener {
-            showAddEventDialog(eventSlider) // 🔥 Passiamo il ViewPager2 invece di eventTextView
+        addEventFab.setOnClickListener {
+            showAddEventBottomSheet(eventSlider)
         }
+
 
         return view
     }
 
-    private fun showAddEventDialog(eventSlider: ViewPager2){
-        val builder = AlertDialog.Builder(requireContext())
-        builder.setTitle("Aggiungi Evento")
+    private fun showAddEventBottomSheet(eventSlider: ViewPager2) {
+        val bottomSheetDialog = BottomSheetDialog(requireContext())
+        val view = layoutInflater.inflate(R.layout.bottom_sheet_add_event, null)
 
-        val layout = LinearLayout(requireContext())
-        layout.orientation = LinearLayout.VERTICAL
-        layout.setPadding(20, 20, 20, 20)
-
-        val eventNameInput = EditText(requireContext())
-        eventNameInput.hint = "Nome evento"
-        layout.addView(eventNameInput)
-
-        val dateButton = Button(requireContext())
-        dateButton.text = "Seleziona Data"
-        layout.addView(dateButton)
-
-        val timeButton = Button(requireContext())
-        timeButton.text = "Seleziona Ora"
-        layout.addView(timeButton)
-
-        val eventDescriptionInput = EditText(requireContext())
-        eventDescriptionInput.hint = "Descrizione (opzionale)"
-        layout.addView(eventDescriptionInput)
-
-        builder.setView(layout)
+        val eventNameInput = view.findViewById<EditText>(R.id.eventNameInput)
+        val dateButton = view.findViewById<Button>(R.id.dateButton)
+        val timeButton = view.findViewById<Button>(R.id.timeButton)
+        val descriptionInput = view.findViewById<EditText>(R.id.descriptionInput)
+        val saveButton = view.findViewById<Button>(R.id.saveButton)
 
         var selectedDateText = selectedDate
         var selectedTimeText = ""
@@ -108,9 +94,9 @@ class CalendarFragment : Fragment() {
             timePicker.show()
         }
 
-        builder.setPositiveButton("Salva") { _, _ ->
+        saveButton.setOnClickListener {
             val eventName = eventNameInput.text.toString().trim()
-            val eventDescription = eventDescriptionInput.text.toString().trim()
+            val eventDescription = descriptionInput.text.toString().trim()
 
             if (eventName.isNotEmpty() && selectedTimeText.isNotEmpty()) {
                 val db = FirebaseFirestore.getInstance()
@@ -119,15 +105,16 @@ class CalendarFragment : Fragment() {
                     "time" to selectedTimeText,
                     "name" to eventName,
                     "description" to eventDescription,
-                    "timestamp" to FieldValue.serverTimestamp() // 🔥 Timestamp automatico
+                    "timestamp" to FieldValue.serverTimestamp()
                 )
 
-                db.collection("events").document(selectedDate) // 🔥 Organizza eventi per data
+                db.collection("events").document(selectedDateText)
                     .collection("eventList")
                     .add(event)
                     .addOnSuccessListener {
                         Toast.makeText(requireContext(), "Evento salvato!", Toast.LENGTH_SHORT).show()
-                        loadEventsFromFirebase(eventSlider) // 🔥 Aggiorniamo il ViewPager2
+                        bottomSheetDialog.dismiss()
+                        loadEventsFromFirebase(eventSlider)
                     }
                     .addOnFailureListener {
                         Toast.makeText(requireContext(), "Errore: ${it.message}", Toast.LENGTH_SHORT).show()
@@ -137,9 +124,10 @@ class CalendarFragment : Fragment() {
             }
         }
 
-        builder.setNegativeButton("Annulla") { dialog, _ -> dialog.cancel() }
-        builder.show()
+        bottomSheetDialog.setContentView(view)
+        bottomSheetDialog.show()
     }
+
 
     private fun loadEventsFromFirebase(eventSlider: ViewPager2) {
         val db = FirebaseFirestore.getInstance()
