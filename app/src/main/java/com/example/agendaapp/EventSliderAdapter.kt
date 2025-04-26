@@ -1,27 +1,32 @@
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class EventSliderAdapter(private val events: List<String>) : RecyclerView.Adapter<EventSliderAdapter.EventViewHolder>() {
+class EventListAdapter(private var events: List<String>) : RecyclerView.Adapter<EventListAdapter.EventViewHolder>() {
 
-    class EventViewHolder(val eventText: TextView) : RecyclerView.ViewHolder(eventText)
+    class EventViewHolder(val textView: TextView) : RecyclerView.ViewHolder(textView)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventViewHolder {
         val textView = TextView(parent.context).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
+                ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            textAlignment = TextView.TEXT_ALIGNMENT_CENTER
-            textSize = 24f
             setPadding(16, 16, 16, 16)
+            textSize = 16f
         }
         return EventViewHolder(textView)
     }
 
     override fun onBindViewHolder(holder: EventViewHolder, position: Int) {
-        holder.eventText.text = events[position]
+        holder.textView.text = events[position]
     }
 
-    override fun getItemCount(): Int = events.size
+    override fun getItemCount() = events.size
+
+    fun updateEvents(newEvents: List<String>) {
+        events = newEvents
+        notifyDataSetChanged()
+    }
 }

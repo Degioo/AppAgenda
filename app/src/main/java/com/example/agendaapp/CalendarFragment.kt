@@ -12,6 +12,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.example.agendaapp.R
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -26,32 +28,42 @@ class CalendarFragment : Fragment() {
     private val events = mutableMapOf<String, String>()
     private lateinit var selectedDate: String
 
+    private lateinit var eventsRecyclerView: RecyclerView
+    private lateinit var eventsAdapter: EventListAdapter
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_calendar_layout, container, false)
 
         val calendarView = view.findViewById<CalendarView>(R.id.calendarView)
-        val eventSlider = view.findViewById<ViewPager2>(R.id.eventSlider)
         val addEventFab = view.findViewById<FloatingActionButton>(R.id.addEventFab)
+        eventsRecyclerView = view.findViewById(R.id.eventsRecyclerView)
+
+        eventsAdapter = EventListAdapter(listOf())
+        eventsRecyclerView.adapter = eventsAdapter
+        eventsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+
 
         val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         selectedDate = dateFormatter.format(Date())
 
         calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
             selectedDate = String.format("%02d/%02d/%d", dayOfMonth, month + 1, year)
-            loadEventsFromFirebase(eventSlider) // 🔥 Carica gli eventi da Firebase
+            loadEventsFromFirebase()
         }
 
         addEventFab.setOnClickListener {
-            showAddEventBottomSheet(eventSlider)
+            showAddEventBottomSheet()
         }
 
+        loadEventsFromFirebase()
 
         return view
     }
 
-    private fun showAddEventBottomSheet(eventSlider: ViewPager2) {
+
+    private fun showAddEventBottomSheet() {
         val bottomSheetDialog = BottomSheetDialog(requireContext())
         val view = layoutInflater.inflate(R.layout.bottom_sheet_add_event, null)
 
@@ -114,7 +126,7 @@ class CalendarFragment : Fragment() {
                     .addOnSuccessListener {
                         Toast.makeText(requireContext(), "Evento salvato!", Toast.LENGTH_SHORT).show()
                         bottomSheetDialog.dismiss()
-                        loadEventsFromFirebase(eventSlider)
+                        loadEventsFromFirebase()
                     }
                     .addOnFailureListener {
                         Toast.makeText(requireContext(), "Errore: ${it.message}", Toast.LENGTH_SHORT).show()
@@ -129,25 +141,26 @@ class CalendarFragment : Fragment() {
     }
 
 
-    private fun loadEventsFromFirebase(eventSlider: ViewPager2) {
+    private fun loadEventsFromFirebase() {
         val db = FirebaseFirestore.getInstance()
-        db.collection("events").document(selectedDate) // 🔥 Prende il documento della data selezionata
-            .collection("eventList") // 🔥 Prende la lista degli eventi di quel giorno
+        db.collection("events").document(selectedDate)
+            .collection("eventList")
             .get()
             .addOnSuccessListener { documents ->
                 val eventsList = documents.map { doc ->
-                    "${doc.getString("name")} - ${doc.getString("time")}\n${doc.getString("description")}"
+                    "${doc.getString("time")} - ${doc.getString("name")}"
                 }
                 if (eventsList.isEmpty()) {
-                    eventSlider.adapter = EventSliderAdapter(listOf("Nessun evento per questa data"))
+                    eventsAdapter.updateEvents(listOf("Nessun evento per oggi"))
                 } else {
-                    eventSlider.adapter = EventSliderAdapter(eventsList)
+                    eventsAdapter.updateEvents(eventsList)
                 }
             }
             .addOnFailureListener {
                 Toast.makeText(requireContext(), "Errore nel caricamento: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
+
 
 
 }
