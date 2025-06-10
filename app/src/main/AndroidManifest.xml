@@ -3,13 +3,14 @@
 
     <application
         android:allowBackup="true"
-        android:theme="@style/Theme.AppCompat"
+        android:theme="@style/Theme.AgendaApp"
         android:supportsRtl="true"
         android:label="AgendaApp"
         android:usesCleartextTraffic="true">
 
         <activity android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

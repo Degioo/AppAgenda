@@ -1,42 +1,128 @@
-<?xml version="1.0" encoding="utf-8"?>
+<!-- res/layout/bottom_sheet_add_event.xml -->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="24dp"
+    android:background="@drawable/bottom_sheet_background"> <!-- Ensure bottom_sheet_background.xml exists -->
 
-    <EditText
-        android:id="@+id/eventNameInput"
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Aggiungi Evento"
+        android:textSize="20sp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"
+        android:layout_gravity="center_horizontal"/>
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/eventNameInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Nome evento" />
+        android:layout_marginBottom="12dp"
+        app:startIconDrawable="@drawable/ic_event_name"
+        app:startIconTint="?attr/colorPrimary">
 
-    <Button
-        android:id="@+id/dateButton"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/eventNameInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Nome Evento"
+            android:inputType="textCapWords"
+            android:textColor="?android:attr/textColorPrimary"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:minHeight="48dp" /> <!-- Ensure overall min height -->
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Date and Time Buttons (Side-by-Side for minimal look) -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Seleziona Data"
-        android:layout_marginTop="8dp" />
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
 
-    <Button
-        android:id="@+id/timeButton"
+        <Button
+            android:id="@+id/dateButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Seleziona Data"
+            app:icon="@drawable/ic_date_range"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/timeButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Seleziona Ora"
+            app:icon="@drawable/ic_time"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    <!-- Location with Icon -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/locationInputLayout"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Seleziona Ora"
-        android:layout_marginTop="8dp" />
+        android:layout_marginBottom="12dp"
+        app:startIconDrawable="@drawable/ic_location"
+        app:startIconTint="?attr/colorPrimary">
 
-    <EditText
-        android:id="@+id/descriptionInput"
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/locationInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Descrizione"
-        android:layout_marginTop="8dp" />
+        android:hint="Luogo (Opzionale)"
+        android:inputType="textCapSentences"
+        android:textColor="?android:attr/textColorPrimary" />
+</com.google.android.material.textfield.TextInputLayout> <!-- ****** THIS CLOSING TAG WAS MISSING/INCOMPLETE ****** -->
 
-    <Button
-        android:id="@+id/saveButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Salva"
-        android:layout_marginTop="16dp" />
+    <!-- Description with Icon -->
+<com.google.android.material.textfield.TextInputLayout
+android:id="@+id/descriptionInputLayout"
+style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_marginBottom="20dp"
+app:startIconDrawable="@drawable/ic_description"
+app:startIconTint="?attr/colorPrimary">
+
+<com.google.android.material.textfield.TextInputEditText
+    android:id="@+id/descriptionInput"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:hint="Descrizione (Opzionale)"
+    android:inputType="textMultiLine"
+    android:minLines="2"
+    android:gravity="top"
+    android:textColor="?android:attr/textColorPrimary" />
+</com.google.android.material.textfield.TextInputLayout>
+
+<Button
+android:id="@+id/saveButton"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:text="Salva Evento"
+android:paddingTop="12dp"
+android:paddingBottom="12dp"
+app:icon="@drawable/ic_save" />
 
 </LinearLayout>
+</androidx.core.widget.NestedScrollView>

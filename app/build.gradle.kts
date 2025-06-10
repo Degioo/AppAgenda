@@ -45,6 +45,8 @@ dependencies {
 
     // 🔥 Aggiungi Firebase Firestore
     implementation("com.google.firebase:firebase-firestore:24.8.1")
+    implementation ("com.google.android.libraries.places:places:3.2.0")
+    implementation("com.github.bumptech.glide:glide:4.12.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

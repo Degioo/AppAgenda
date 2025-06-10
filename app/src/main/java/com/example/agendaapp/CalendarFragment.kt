@@ -1,10 +1,16 @@
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.text.Html
+import android.text.SpannableString
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.CalendarView
 import android.widget.EditText
@@ -38,9 +44,12 @@ class CalendarFragment : Fragment() {
 
         val calendarView = view.findViewById<CalendarView>(R.id.calendarView)
         val addEventFab = view.findViewById<FloatingActionButton>(R.id.addEventFab)
+        val eventDetailTextView = view.findViewById<TextView>(R.id.eventDetailTextView)
         eventsRecyclerView = view.findViewById(R.id.eventsRecyclerView)
 
-        eventsAdapter = EventListAdapter(listOf())
+        eventsAdapter = EventListAdapter(listOf()) { eventId ->
+            showEventDetails(eventId)
+        }
         eventsRecyclerView.adapter = eventsAdapter
         eventsRecyclerView.layoutManager = LinearLayoutManager(requireContext())
 
@@ -63,6 +72,7 @@ class CalendarFragment : Fragment() {
     }
 
 
+
     private fun showAddEventBottomSheet() {
         val bottomSheetDialog = BottomSheetDialog(requireContext())
         val view = layoutInflater.inflate(R.layout.bottom_sheet_add_event, null)
@@ -72,6 +82,13 @@ class CalendarFragment : Fragment() {
         val timeButton = view.findViewById<Button>(R.id.timeButton)
         val descriptionInput = view.findViewById<EditText>(R.id.descriptionInput)
         val saveButton = view.findViewById<Button>(R.id.saveButton)
+
+        val locationInput = view.findViewById<EditText>(R.id.locationInput)
+
+        // Set text colors (if you didn't do it in XML or want to ensure it)
+        eventNameInput.setTextColor(Color.BLACK)
+        descriptionInput.setTextColor(Color.BLACK) // Also for the location input
+        locationInput.setTextColor(Color.BLACK)
 
         var selectedDateText = selectedDate
         var selectedTimeText = ""
@@ -109,6 +126,7 @@ class CalendarFragment : Fragment() {
         saveButton.setOnClickListener {
             val eventName = eventNameInput.text.toString().trim()
             val eventDescription = descriptionInput.text.toString().trim()
+            val eventLocation = locationInput.text.toString().trim() // Get location text
 
             if (eventName.isNotEmpty() && selectedTimeText.isNotEmpty()) {
                 val db = FirebaseFirestore.getInstance()
@@ -117,6 +135,7 @@ class CalendarFragment : Fragment() {
                     "time" to selectedTimeText,
                     "name" to eventName,
                     "description" to eventDescription,
+                    "location" to eventLocation, // Add location to the map
                     "timestamp" to FieldValue.serverTimestamp()
                 )
 
@@ -132,11 +151,12 @@ class CalendarFragment : Fragment() {
                         Toast.makeText(requireContext(), "Errore: ${it.message}", Toast.LENGTH_SHORT).show()
                     }
             } else {
-                Toast.makeText(requireContext(), "Compila tutti i campi!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Compila nome evento e ora!", Toast.LENGTH_SHORT).show()
             }
         }
 
         bottomSheetDialog.setContentView(view)
+        bottomSheetDialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         bottomSheetDialog.show()
     }
 
@@ -148,10 +168,10 @@ class CalendarFragment : Fragment() {
             .get()
             .addOnSuccessListener { documents ->
                 val eventsList = documents.map { doc ->
-                    "${doc.getString("time")} - ${doc.getString("name")}"
+                    Pair(doc.id, "${doc.getString("time")} - ${doc.getString("name")}")
                 }
                 if (eventsList.isEmpty()) {
-                    eventsAdapter.updateEvents(listOf("Nessun evento per oggi"))
+                    eventsAdapter.updateEvents(listOf(Pair("", "Nessun evento per oggi")))
                 } else {
                     eventsAdapter.updateEvents(eventsList)
                 }
@@ -162,5 +182,79 @@ class CalendarFragment : Fragment() {
     }
 
 
+    // In CalendarFragment.kt, inside showEventDetails()
+
+    private fun showEventDetails(eventId: String) {
+        if (eventId.isEmpty()) return
+
+        val db = FirebaseFirestore.getInstance()
+        db.collection("events").document(selectedDate)
+            .collection("eventList")
+            .document(eventId)
+            .get()
+            .addOnSuccessListener { documentSnapshot ->
+                if (documentSnapshot != null && documentSnapshot.exists()) {
+                    val name = documentSnapshot.getString("name") ?: "Senza nome"
+                    val time = documentSnapshot.getString("time") ?: "Senza orario"
+                    val description = documentSnapshot.getString("description") ?: "Nessuna descrizione"
+                    val location = documentSnapshot.getString("location") ?: ""
+
+                    // Using Unicode characters for icons (find suitable ones)
+                    val timeIcon = "🕒"    // Or "\u23F0"
+                    val eventIcon = "📌"   // Or "\uD83D\uDCCC"
+                    val locationIcon = "📍" // Or "\uD83D\uDCCD"
+                    val descriptionIcon = "📝" // Or "\uD83D\uDCDD"
+
+                    var detailsHtml = "<h2>${eventIcon} $name</h2>" +
+                            "<p><b>${timeIcon} Orario:</b> $time</p>"
+
+                    if (location.isNotBlank()) {
+                        detailsHtml += "<p><b>${locationIcon} Luogo:</b> $location</p>"
+                    }
+                    if (description.isNotBlank()) {
+                        detailsHtml += "<p><b>${descriptionIcon} Descrizione:</b><br/>$description</p>"
+                    }
+
+                    val dialogTitle = SpannableString("Dettagli Evento")
+                    // You can style the title if needed, e.g., make it bold or change color
+
+                    AlertDialog.Builder(requireContext())
+                        .setTitle(dialogTitle)
+                        .setMessage(Html.fromHtml(detailsHtml, Html.FROM_HTML_MODE_LEGACY))
+                        .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                        .setNegativeButton("Apri Mappa") { _, _ -> // Placeholder for map intent
+                            if (location.isNotBlank()) {
+                                openLocationInMap(location)
+                            } else {
+                                Toast.makeText(requireContext(), "Nessun luogo specificato", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        .show()
+                } else {
+                    Toast.makeText(requireContext(), "Dettagli evento non trovati.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener { exception ->
+                Toast.makeText(requireContext(), "Errore caricamento dettagli: ${exception.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // Helper function to open location in a map app
+    private fun openLocationInMap(address: String) {
+        val gmmIntentUri = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
+        val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+        mapIntent.setPackage("com.google.android.apps.maps") // Attempt to use Google Maps specifically
+        if (mapIntent.resolveActivity(requireActivity().packageManager) != null) {
+            startActivity(mapIntent)
+        } else {
+            // Fallback if Google Maps is not installed, try any app that can handle geo URI
+            val genericMapIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=${Uri.encode(address)}"))
+            if (genericMapIntent.resolveActivity(requireActivity().packageManager) != null) {
+                startActivity(genericMapIntent)
+            } else {
+                Toast.makeText(requireContext(), "Nessuna app per le mappe trovata.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
 }
